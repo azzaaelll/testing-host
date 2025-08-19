@@ -1,0 +1,201 @@
+<!DOCTYPE html><html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tabel Penilaian Lomba</title>
+  <style>
+    :root{
+      --bg:#0b0f19; --card:#111827; --muted:#94a3b8; --ink:#e5e7eb; --ink-2:#cbd5e1; --accent:#22c55e; --accent-2:#10b981; --danger:#ef4444; --ring:#334155;
+    }
+    html,body{height:100%;}
+    body{margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Noto Sans, "Apple Color Emoji","Segoe UI Emoji"; background:linear-gradient(180deg,var(--bg),#0e1726); color:var(--ink);}
+    .wrap{max-width:1100px; margin:32px auto; padding:0 16px 64px;}
+    header{display:flex; flex-wrap:wrap; align-items:center; gap:12px; justify-content:space-between; margin-bottom:16px;}
+    h1{font-size:clamp(20px,4vw,32px); letter-spacing:.2px; margin:0;}
+    .actions{display:flex; gap:8px; flex-wrap:wrap}
+    button{appearance:none; border:1px solid var(--ring); background:#0f172a; color:var(--ink); padding:10px 14px; border-radius:12px; cursor:pointer; transition:.2s transform,.2s background,.2s color,.2s border; font-weight:600}
+    button:hover{transform:translateY(-1px); border-color:var(--accent); color:#fff}
+    .primary{background:linear-gradient(180deg,var(--accent),var(--accent-2)); border-color:transparent;}
+    .primary:hover{filter:brightness(1.05)}
+    .grid{display:grid; grid-template-columns:repeat(1,minmax(0,1fr)); gap:18px}
+    @media(min-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));}}.card{background:linear-gradient(180deg,var(--card),#0f1a2b); border:1px solid rgba(148,163,184,.16); border-radius:18px; padding:16px 16px; box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.card h2{font-size:18px; margin:0 0 8px}
+.meta{display:flex; gap:8px; flex-wrap:wrap; color:var(--muted); font-size:12px; margin-bottom:8px}
+
+table{width:100%; border-collapse:separate; border-spacing:0; overflow:hidden; border-radius:14px; background:#0b1423; border:1px solid rgba(148,163,184,.16)}
+thead th{position:sticky; top:0; background:#0e192a; font-weight:700; text-align:left; padding:10px 12px; border-bottom:1px solid rgba(148,163,184,.16);}
+tbody td{padding:10px 12px; border-bottom:1px dashed rgba(148,163,184,.12); color:var(--ink-2)}
+tfoot td{padding:12px; background:#0b1322; font-weight:700}
+.right{text-align:right}
+.center{text-align:center}
+input[type="number"]{width:100%; background:#0b1020; color:var(--ink); border:1px solid rgba(148,163,184,.2); outline:none; padding:8px 10px; border-radius:10px}
+input[type="number"]:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(34,197,94,.15)}
+.total{color:#fff}
+.footnote{color:var(--muted); font-size:12px; margin-top:6px}
+
+@media print {
+  body{background:#fff; color:#000}
+  .card{background:#fff; border-color:#ddd; box-shadow:none}
+  table{background:#fff}
+  thead th{background:#f6f7fb}
+  input[type="number"]{border:1px solid #aaa}
+  .actions{display:none}
+  .grid{grid-template-columns:1fr}
+  .footnote{color:#555}
+  .wrap{padding-bottom:0}
+  .page-break{page-break-after:always}
+}
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Form Tabel Penilaian Lomba</h1>
+      <div class="actions">
+        <button class="primary" onclick="window.print()">Cetak / Simpan PDF</button>
+        <button onclick="resetSemua()">Reset Semua Nilai</button>
+      </div>
+    </header><div class="grid" id="grid"></div>
+
+<p class="footnote">Catatan: Isi kolom <b>Nilai (0–100)</b>. Kolom <b>Skor</b> akan terhitung otomatis (Nilai × Bobot%). Total Skor adalah penjumlahan semua skor.</p>
+
+  </div>  <template id="tpl-card">
+    <section class="card">
+      <h2 class="judul"></h2>
+      <div class="meta">
+        <label>Nama Peserta: <input type="text" class="meta-input" placeholder="—"/></label>
+        <label>Juri: <input type="text" class="meta-input" placeholder="—"/></label>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:44%">Aspek Penilaian</th>
+              <th class="right" style="width:12%">Bobot</th>
+              <th class="center" style="width:18%">Nilai (0–100)</th>
+              <th class="right" style="width:18%">Skor</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" class="right total">Total Skor</td>
+              <td class="right total t-skor">0.00</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  </template>  <script>
+    const DATA = {
+      "Vocal Solo": [
+        ["Vokal", 30],
+        ["Penghayatan / Ekspresi / Artikulasi", 25],
+        ["Kejelasan Lirik", 15],
+        ["Teknik Bernyanyi", 15],
+        ["Pemahaman", 15]
+      ],
+      "Membaca Proklamasi": [
+        ["Pengucapan / Artikulasi / Intonasi", 30],
+        ["Penguasaan Kata", 25],
+        ["Penghayatan / Ekspresi", 20],
+        ["Kejelasan Suara / Volume", 15],
+        ["Kerapihan Penampilan / Sikap", 10]
+      ],
+      "Pidato": [
+        ["Kesesuaian Tema", 30],
+        ["Penguasaan Materi", 20],
+        ["Pengucapan / Artikulasi", 15],
+        ["Inovasi", 15],
+        ["Volume Suara / Ekspresi", 10],
+        ["Kerapihan Penampilan", 10]
+      ],
+      "Desain Poster": [
+        ["Kreativitas / Keunikan Ide", 30],
+        ["Kesesuaian dengan Tema", 25],
+        ["Komposisi / Tata Letak", 20],
+        ["Kombinasi Warna / Estetika", 15],
+        ["Kerapihan / Kualitas Gambar", 10]
+      ],
+      "Badminton": [
+        ["Teknik Pukulan", 30],
+        ["Ketepatan / Kontrol Shuttlecock", 25],
+        ["Kerjasama Tim", 20],
+        ["Strategi", 15],
+        ["Sikap Sportif / Etika Bermain", 10]
+      ],
+      "Basket": [
+        ["Penguasaan Teknik Dasar", 30],
+        ["Kerjasama Tim", 25],
+        ["Strategi", 20],
+        ["Kecepatan dan Kelincahan", 15],
+        ["Sikap Sportif / Etika Bermain", 10]
+      ]
+    };
+
+    const grid = document.getElementById('grid');
+
+    function buatKartu(judul, aspek) {
+      const tpl = document.getElementById('tpl-card');
+      const node = tpl.content.cloneNode(true);
+      node.querySelector('.judul').textContent = `Tabel Penilaian ${judul}`;
+      const tbody = node.querySelector('tbody');
+      aspek.forEach(([nama, bobot]) => {
+        const tr = document.createElement('tr');
+        tr.dataset.weight = bobot;
+        tr.innerHTML = `
+          <td>${nama}</td>
+          <td class="right">${bobot}%</td>
+          <td class="center"><input type="number" min="0" max="100" step="1" placeholder="0" class="nilai" aria-label="Nilai untuk ${nama}"></td>
+          <td class="right skor">0.00</td>
+        `;
+        tbody.appendChild(tr);
+      });
+      grid.appendChild(node);
+    }
+
+    function format2(x){
+      return (Math.round((x + Number.EPSILON) * 100) / 100).toFixed(2);
+    }
+
+    function hitungSemua(){
+      document.querySelectorAll('.card').forEach(card=>{
+        let total = 0;
+        card.querySelectorAll('tbody tr').forEach(tr=>{
+          const w = parseFloat(tr.dataset.weight)||0; // persen
+          const nilai = parseFloat(tr.querySelector('.nilai').value)||0;
+          const skor = nilai * (w/100);
+          tr.querySelector('.skor').textContent = format2(skor);
+          total += skor;
+        });
+        card.querySelector('.t-skor').textContent = format2(total);
+      });
+    }
+
+    function resetSemua(){
+      document.querySelectorAll('.nilai').forEach(i=> i.value = '');
+      hitungSemua();
+    }
+
+    // Inisialisasi tampilan
+    for(const [judul, aspek] of Object.entries(DATA)){
+      buatKartu(judul, aspek);
+    }
+
+    // Delegasi event untuk perhitungan realtime
+    document.addEventListener('input', (e)=>{
+      if(e.target.classList.contains('nilai')){
+        // clamp 0..100
+        let v = e.target.value;
+        if(v !== ''){
+          let n = Math.max(0, Math.min(100, parseFloat(v)));
+          e.target.value = isNaN(n)? '' : n;
+        }
+        hitungSemua();
+      }
+    });
+
+    hitungSemua();
+  </script></body>
+</html>
